@@ -51,5 +51,29 @@ function! SyncDownloadFile()
   endif
 endfunction
 
+function! SyncToRemote()
+  let exe = SyncGetExe()
+  if !empty(exe)
+    let fold = substitute(expand('%:p:h'), exe[0:strridx(exe, '/')], "", "")
+    let filelist = split(expand('%:p'), '/')
+    let file = filelist[-1]
+    let cmd = printf("%s %s %s %s", exe, 'sync_to_remote', fold, shellescape(file))
+    execute '!' . cmd
+  endif
+endfunction
+
+function! SyncToLocal()
+  let exe = SyncGetExe()
+  if !empty(exe)
+    let fold = substitute(expand('%:p:h'), exe[0:strridx(exe, '/')], "", "")
+    let filelist = split(expand('%:p'), '/')
+    let file = filelist[-1]
+    let cmd = printf("%s %s %s %s", exe, 'sync_to_local', fold, shellescape(file))
+    execute '!' . cmd
+  endif
+endfunction
+
 nmap <leader>su :call SyncUploadFile()<CR>
 nmap <leader>sd :call SyncDownloadFile()<CR>
+nmap <leader>sr :call SyncToRemote()<CR>
+nmap <leader>sl :call SyncToLocal()<CR>
