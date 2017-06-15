@@ -13,7 +13,7 @@ Usage
 ----
 
 create a execute file called .sync in your project directory.
-e.g. /project_dir/ is your project dirctory and the execute file is /project_dir/.sync. how to write execute file see "some execute config" section.
+e.g. /project_dir/ is your project directory and the execute file is /project_dir/.sync. how to write execute file see "some execute config" section.
 
     <leader>su
     Upload current buffer file, it will execute the command: project_dir/.sync upload current_buffer_fold current_file_name
@@ -21,59 +21,92 @@ e.g. /project_dir/ is your project dirctory and the execute file is /project_dir
     <leader>sd
     Download current buffer file, it will execute the command: project_dir/.sync download current_buffer_fold current_file_name
 
+    <leader>sr
+    Sync the project_dir to remote, it will execute the command: project_dir/.sync sync_to_remote current_buffer_fold current_file_name
+
+    <leader>sl
+    Sync the project_dir to local, it will execute the command: project_dir/.sync sync_to_local current_buffer_fold current_file_name
+
 some execute config
 ----
-* rsync:
-<pre>
-#!/bin/sh
-if [ "upload" == $1 ];then
-    rsync -azcuv -e "/bin/ssh -p36000 -q" `dirname $0`/$2/$3 login_name@remote_host:/remote_path/$2/$3
-elif [ 'download' == $1 ];then
-    rsync -azcuv -e "/bin/ssh -p36000 -q" login_name@remote_host:/remote_path/$2/$3 `dirname $0`/$2/$3
-fi
-</pre>
-* sftp:
-<pre>
-#!/bin/sh
-if [ "upload" == $1 ];then
-    expect -c <<'END_EXPECT'
-	set timeout -1
-	spawn sftp login_name@1.2.3.4
-	expect "[Pp]assword:"
-	send "login_password\r"
-	expect "sftp>"
-	send "put `dirname $0`/$2/$3 /remote_path/$2/$3\r"
-	expect "%100"
-	send "quit\r"
-	expect eof
-	END_EXPECT
-elif [ 'download' == $1 ];then
-    expect -c <<'END_EXPECT'
-	set timeout -1
-	spawn sftp login_name@1.2.3.4
-	expect "[Pp]assword:"
-	send "login_password\r"
-	expect "sftp>"
-	send "get /remote_path/$2/$3 `dirname $0`/$2/$3 \r"
-	expect "%100"
-	send "quit\r"
-	expect eof
-	END_EXPECT
-fi
-</pre>
-* ftp:
-<pre>
-#!/bin/sh
-if [ "upload" == $1 ];then
-  ncftpput -m -u login_name -p login_password -P 21 remote_host remote_path/$2 `dirname $0`/$2/$3
-elif [ 'download' == $1 ];then
-  ncftpget -u login_name -p login_password -P 21 remote_host `dirname $0`/$2 remote_path/$2/$3 
-fi
-</pre>
-
 * scp:
+```sh
+#!/bin/sh
+######user define begin#######
+username="myuser"
+password="mypassword"
+host="192.168.1.1"
+remote_path="/home/test"
+######user define end#########
 
-    referred to rsync
+project_path=`dirname $0`
+local_path=${project_path%/*}
+project_name=${project_path##*/}
+file_path=$2
+file_name=$3
+echo "***************"
+echo "project_path:" $project_path
+echo "local_path:"   $local_path
+echo "project_name:" $project_name
+echo "file_path:"    $file_path
+echo "file_name:"    $file_name
+echo "***************"
+
+if [ 'upload' == $1 ];then
+    #when the file in the root of projetc_path, the project_path equel file_path,
+    #so need the special case
+    if [ $project_path == $file_path ];then
+        cmd="$file_path/$file_name $username@$host:$remote_path/$project_name/"
+    else
+        cmd="$project_path/$file_path/$file_name $username@$host:$remote_path/$project_name/$file_path/"
+    fi
+elif [ 'download' == $1 ];then
+    if [ $project_path == $file_path ];then
+        cmd="$username@$host:$remote_path/$project_name/$file_name $file_path/"
+    else
+        cmd="$username@$host:$remote_path/$project_name/$file_path/$file_name $project_path/$file_path/"
+    fi
+elif [ 'sync_to_remote' == $1 ];then
+    cmd="$local_path/$project_name $username@$host:$remote_path/"
+elif [ 'sync_to_local' == $1 ];then
+    cmd="$username@$host:$remote_path/$project_name $local_path/"
+fi
+
+#!!!node: the next line 'EOF' should be EOF, please replace it!
+expect <<'EOF'
+set timeout -1
+spawn scp -q -r $cmd
+expect "password:"
+send "$password\r"
+expect eof
+EOF
+```
+<pre>
+e.g. directory structer
+home
+   └── test
+       └── project_dir
+           ├── include
+           │   ├── bar.h
+           │   └── foo.h
+           ├── README.md
+           ├── src
+           │   ├── bar
+           │   │   └── bar.c
+           │   └── foo
+           │       └── foo.c
+           └── .sync
+
+project_path is /home/test/project_dir
+local_path is   /home/test
+project_name is project_dir
+file_path is the file's relative path (e.g. for file bar.h/foo.h, the file_path is include.
+and for bar.c, the file_path is src/bar)
+
+note: when the file you are editing in the root of project_dir, the project_path is the same with the file_path
+e.g. for README.md
+the project_path and the file_path are also /home/test/project_dir, so we need to special process.
+</pre>
 * ...
 
 Alias
