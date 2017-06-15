@@ -36,7 +36,7 @@ function! SyncUploadFile()
     let filelist = split(expand('%:p'), '/')
     let file = filelist[-1]
     let cmd = printf("%s %s %s %s", exe, 'upload', fold, shellescape(file))
-    execute '!' . cmd
+    execute 'silent !' . cmd
   endif
 endfunction
 

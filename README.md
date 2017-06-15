@@ -44,13 +44,13 @@ local_path=${project_path%/*}
 project_name=${project_path##*/}
 file_path=$2
 file_name=$3
-echo "***************"
-echo "project_path:" $project_path
-echo "local_path:"   $local_path
-echo "project_name:" $project_name
-echo "file_path:"    $file_path
-echo "file_name:"    $file_name
-echo "***************"
+#echo "***************"
+#echo "project_path:" $project_path
+#echo "local_path:"   $local_path
+#echo "project_name:" $project_name
+#echo "file_path:"    $file_path
+#echo "file_name:"    $file_name
+#echo "***************"
 
 if [ 'upload' == $1 ];then
     #when the file in the root of projetc_path, the project_path equel file_path,
@@ -72,14 +72,7 @@ elif [ 'sync_to_local' == $1 ];then
     cmd="$username@$host:$remote_path/$project_name $local_path/"
 fi
 
-#!!!node: the next line 'EOF' should be EOF, please replace it!
-expect <<'EOF'
-set timeout -1
-spawn scp -q -r $cmd
-expect "password:"
-send "$password\r"
-expect eof
-EOF
+sshpass -p $password scp -q -r $cmd
 ```
 <pre>
 e.g. directory structer
